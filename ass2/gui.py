@@ -42,13 +42,13 @@ def callback(event):
     print event.x, event.y
     
     if NUM_CLICK_EVENTS % 2 == 0:
-        print "clicked at: ", event.x, HEIGHT-event.y
-        X.append([event.x, HEIGHT-event.y])
+        print "clicked at: ", event.x, event.y
+        X.append([event.x, event.y])
     else:
         w = event.x - WIDTH
-        h = HEIGHT-event.y
+        h = event.y
         print "clicked at: ", w, h
-        X_dash.append([event.x-WIDTH, HEIGHT-event.y])
+        X_dash.append([event.x-WIDTH, event.y])
 
     NUM_CLICK_EVENTS += 1
 
