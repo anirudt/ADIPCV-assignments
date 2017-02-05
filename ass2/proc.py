@@ -21,6 +21,20 @@ def solve(A):
 
 def apply_homography(img, h):
     """ Applies a homography h to img """
+    nrows, ncols = img.shape
+    new_img = np.zeros(img.shape)
+    for i in xrange(nrows):
+        for j in xrange(ncols):
+            x = np.array([i, j, 1])
+            x_dash = np.dot(h, x)
+            x_dash = x_dash / (x_dash[3])
+            if np.any(x_dash < 0):
+                continue
+            else:
+                new_img[np.round(x_dash[0]), np.round(x_dash[1])] = img[i, j]
+
+    return new_img
+
 
 def compute_homography(X, X_dash):
     """ Computes the homography matrix for a set of N correspondences,
