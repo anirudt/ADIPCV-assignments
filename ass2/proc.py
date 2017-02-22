@@ -8,6 +8,22 @@ import os
 import cPickle as pickle
 import pdb
 import cv2
+from optparse import OptionParser
+
+parser = OptionParser(description="Runner tool for FR-DL")
+
+parser.add_option("-s", "--sec", action="store", dest="sec", default="1", help="Section Number of the assignment, 1, 2, 3 and 4")
+
+def cross_pdt(a, b):
+    """ Computes the cross product of two points in the homogeneous space"""
+    a1, a2, a3 = a
+    b1, b2, b3 = b
+    a1, a2, a3 = a1*1.0/a3, a2*1.0/a3, 1.0
+    b1, b2, b3 = b1*1.0/b3, b2*1.0/b3, 1.0
+    res = np.array([a2*b3-a3*b2, a3*b1-a1*b3, a1*b2-a2*b1])
+    res /= res[2]
+    return res
+
 
 def null(A, eps=1e-7):
     """ Computes the null space of the matrix A """
@@ -37,7 +53,6 @@ def apply_homography(img, h):
 
     return new_img
 
-
 def compute_homography(X, X_dash):
     """ Computes the homography matrix for a set of N correspondences,
         finds h such that Ah = 0
@@ -46,16 +61,14 @@ def compute_homography(X, X_dash):
 
     # Compute the A matrix
     A = np.zeros((2*N, 9))
-    #pdb.set_trace()
-    for i in xrange(0,N):
-        x, y = X[i][0]
-        x_dash, y_dash = X_dash[i][0]
-        
+    pdb.set_trace()
+    for i in xrange(N):
+        x, y = X[i]
+        x_dash, y_dash = X_dash[i]
         A[i*2,:] = np.array([-x, -y, -1, 0, 0, 0, x*x_dash, y*x_dash, x_dash])
         A[i*2+1,:] = np.array([0, 0, 0, -x, -y, -1, x*y_dash, y*y_dash, y_dash ])
 
     h = null(A)
-    
     h = np.reshape(h, (3,3))
     h = h/h[2,2]
     return h
@@ -95,7 +108,7 @@ def compute_sift_matches(f1, f2):
     (w, h) = img1.shape
     out = cv2.warpPerspective(img2, M, (h, w))
     #out = apply_homography(img2, M)
-    cv2.imwrite("out_sift.png", out)
+    cv2.imwrite("out/out_sift.png", out)
 
     return out
 
@@ -125,15 +138,46 @@ def scene_summarise():
     cv2.imwrite("out/res.png", result)
 
 def compute_vanishing_line():
+    os.system("python vanish.py imgs/Nov17.jpg")
+    img = cv2.imread("imgs/Nov17.jpg", cv2.IMREAD_GRAYSCALE)
+    with open('data_vl', 'rb') as g:
+        X = pickle.load(g)
+    print X
+    l1 = cross_pdt(X[0], X[1])
+    l2 = cross_pdt(X[2], X[3])
+    l3 = cross_pdt(X[4], X[5])
+    l4 = cross_pdt(X[6], X[7])
 
-if __name__ == "__main__":
-    # Add a menu driven program
-    """
-    print "Let's Start"
+    v1 = cross_pdt(l1, l2)
+    v2 = cross_pdt(l3, l4)
+
+    vl = cross_pdt(v1, v2)
+
+    print "The vanishing line is described by {}".format(vl)
+    H = np.array([[1,0,0], [0,1,0], vl])
+    out = cv2.warpPerspective(img, H, img.shape[1::-1])
+    cv2.imwrite("out/out_rect.png", out)
+
+def apply_all():
     os.system("python gui.py imgs/Dec12.jpg imgs/Jan12.jpg")
     with open('data', 'rb') as g:
         X, X_dash = pickle.load(g)
-    h = compute_homography(X, X_dash)
-    print h
-    """
-    scene_summarise()
+    X, X_dash = np.array(X, dtype=np.float32), np.array(X_dash, dtype=np.float32)
+    M, status = cv2.findHomography(X_dash, X, cv2.RANSAC, 5.0)
+    h = compute_homography(X_dash, X)
+    img = cv2.imread("imgs/Jan12.jpg", cv2.IMREAD_GRAYSCALE)
+    out1 = apply_homography(img, M)
+    out = cv2.warpPerspective(img, M, img.shape[1::-1])
+    cv2.imwrite("out/manual.jpg", out)
+    cv2.imwrite("out/manual1.jpg", out1)
+
+if __name__ == "__main__":
+    (options, args) = parser.parse_args()
+    if options.sec is "1":
+        apply_all()
+    elif options.sec is "2":
+        compute_sift_matches("imgs/Jan12.jpg", "imgs/Dec12.jpg")
+    elif options.sec is "3":
+        scene_summarise()
+    elif options.sec is "4":
+        compute_vanishing_line()

@@ -1,0 +1,60 @@
+\documentclass[]{article}
+\usepackage{amsmath}
+
+%opening
+\title{ADIPCV Assignment}
+\author{}
+
+\begin{document}
+
+\maketitle
+
+For instructions regarding running code, kindly refer to the \texttt{README.md} file attached.
+
+\section{Computing Homographies}
+In the first part, the keypoints can be selected
+manually using the GUI. Homography matrices are computed
+with respect to the first image (\textit{Nov 17}), and
+applied. The computation of the homography is done by
+using Direct Linear Transform (DLT), solving the equation
+$\mathbf{A}\mathbf{H} = \mathbf{0}$. $\mathbf{H}$ is computed
+by calculating the null space of $\mathbf{A}$, the
+eigenvector corresponding to the smallest eigenvalue.
+
+Applying the homography matrix is done by using $\mathbf{X} = \mathbf{H} \mathbf{x}$ in the homogeneous coordinate space,
+and taking into consideration the boundary conditions.
+
+\section{Using SIFT}
+The keypoint selection is conducted using SIFT. In order to
+remove outliers, \textit{Lowe's ratio test} is used to only use the keypoints that are closer to each other. Post this,
+the homography computation and application follow the same scheme as the earlier section.
+
+\section{Scene Summarization}
+Each of the images are projected with respect to the first image,
+and differences are calculated between the applied images. These
+differences can be used to assess the growth in every consecutive image.
+Since pixel wise differences may not reflect true changes due to factors such as \textbf{illumination}, it could be prudent 
+to alternatively apply a mean shifting, histogram equalization, or utilize the gradients instead to visualize the scene changes.
+
+\section{Vanishing Points \& Affine Rectification}
+The vanishing line is computed using points selected by the user
+in a GUI driven program. Points are selected on parallel lines in the same plane, basically in the following manner:
+\begin{enumerate}
+  \item Select 8 points, 2 each on 2 sets of parallel lines
+  \item The points of intersection of these lines is computed 
+  \item Following this, the vanishing line can be computed.
+\end{enumerate}
+These intersection computations are basically a series of cross
+products. 
+
+Post this, the vanishing line $<l_1, l_2, l_3>$ can be used to 
+find the affine rectification matrix as:
+\begin{equation}
+  \mathbf{H} = 
+  \begin{bmatrix}
+  1 & 0 & 0 \\
+  0 & 1 & 0 \\
+  l_1 & l_2 & l_3 \\
+  \end{bmatrix}
+\end{equation}
+\end{document}
