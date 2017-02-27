@@ -24,18 +24,11 @@ def cross_pdt(a, b):
     res /= res[2]
     return res
 
-
 def null(A, eps=1e-7):
     """ Computes the null space of the matrix A """
     u, s, vh = np.linalg.svd(A)
     null_space = np.compress(s <= eps, vh, axis=0)
     return vh[:,-1]
-
-def solve(A):
-    """ Finds the eigenvector corresponding to the smallest eigenvalue
-    of the given matrix"""
-    eig_vals, eig_vecs = np.linalg.eig(np.dot(A.T, A))
-    return eig_vecs[:, np.argmin(eig_vals)]
 
 def apply_homography(img, h):
     """ Applies a homography h to img """
@@ -61,7 +54,6 @@ def compute_homography(X, X_dash):
 
     # Compute the A matrix
     A = np.zeros((2*N, 9))
-    pdb.set_trace()
     for i in xrange(N):
         x, y = X[i]
         x_dash, y_dash = X_dash[i]
@@ -113,6 +105,9 @@ def compute_sift_matches(f1, f2):
     return out
 
 def scene_summarise():
+    """ For a series of images, this function computes and applies SIFT homographies
+    and helps to view the scene changes by analysing pixel wise differences"""
+
     files = ['imgs/Nov17.jpg', 'imgs/Dec12.jpg', 'imgs/Jan7.jpg', 'imgs/Jan12.jpg', 'imgs/Jan22.jpg']
     # TODO: Add the manual running part and save the files
 
@@ -121,6 +116,7 @@ def scene_summarise():
     out2 = compute_sift_matches(files[4], files[2])
     out3 = compute_sift_matches(files[4], files[3])
     out4 = compute_sift_matches(files[4], files[4])
+
     #cv2.imwrite("out/homo_manual{0}.png".format(i), out)
 
     # Working on differences, and adding masks to avoid
@@ -137,9 +133,12 @@ def scene_summarise():
     result = (diff0+diff1+diff2+diff3)
     cv2.imwrite("out/res.png", result)
 
-def compute_vanishing_line():
-    os.system("python vanish.py imgs/Nov17.jpg")
-    img = cv2.imread("imgs/Nov17.jpg", cv2.IMREAD_GRAYSCALE)
+def compute_vanishing_line(f):
+    """ Computes the vanishing line by computing the line between
+    2 vanishing points, i.e. points of intersection of 2 sets of
+    parallel lines in the same plane"""
+    os.system("python vanish.py {}".format(f))
+    img = cv2.imread(f, cv2.IMREAD_GRAYSCALE)
     with open('data_vl', 'rb') as g:
         X = pickle.load(g)
     print X
@@ -158,26 +157,27 @@ def compute_vanishing_line():
     out = cv2.warpPerspective(img, H, img.shape[1::-1])
     cv2.imwrite("out/out_rect.png", out)
 
-def apply_all():
-    os.system("python gui.py imgs/Dec12.jpg imgs/Jan12.jpg")
+def apply_all(f1, f2):
+    """ Computes and applies the homography using the manual GUI guided interface"""
+    os.system("python gui.py {} {}".format(f1, f2))
     with open('data', 'rb') as g:
         X, X_dash = pickle.load(g)
     X, X_dash = np.array(X, dtype=np.float32), np.array(X_dash, dtype=np.float32)
     M, status = cv2.findHomography(X_dash, X, cv2.RANSAC, 5.0)
     h = compute_homography(X_dash, X)
-    img = cv2.imread("imgs/Jan12.jpg", cv2.IMREAD_GRAYSCALE)
-    out1 = apply_homography(img, M)
-    out = cv2.warpPerspective(img, M, img.shape[1::-1])
+    img = cv2.imread(f2, cv2.IMREAD_GRAYSCALE)
+    out = apply_homography(img, h)
+    #out = cv2.warpPerspective(img, M, img.shape[1::-1])
     cv2.imwrite("out/manual.jpg", out)
-    cv2.imwrite("out/manual1.jpg", out1)
 
 if __name__ == "__main__":
     (options, args) = parser.parse_args()
+    print args
     if options.sec is "1":
-        apply_all()
+        apply_all(args[0], args[1])
     elif options.sec is "2":
-        compute_sift_matches("imgs/Jan12.jpg", "imgs/Dec12.jpg")
+        compute_sift_matches(args[0], args[1])
     elif options.sec is "3":
         scene_summarise()
     elif options.sec is "4":
-        compute_vanishing_line()
+        compute_vanishing_line(args[0])
