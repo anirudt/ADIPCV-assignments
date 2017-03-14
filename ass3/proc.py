@@ -165,6 +165,9 @@ def draw_epipolar_lines(X, X_dash, F):
     cv2.imwrite("lines_2.png", img2)
 
 def compute_projective_mats(F, e, e_dash):
+    """ Computes projective matrices using convenient relations:
+        P = [I|0], P_dash = [M | m]"""
+
     P = np.concatenate((np.eye(3), np.zeros((3,1))), axis=1)
 
     e1, e2, e3 = e_dash
@@ -175,6 +178,25 @@ def compute_projective_mats(F, e, e_dash):
     print P, P_dash
 
     return P, P_dash
+
+def linear_triangulation(X, X_dash, P, P_dash):
+    """ Maps a linear triangulation to give a list of corresponding
+    scene points """
+    N = len(X)
+    scene_points = np.zeros((N, 4))
+    for idx in xrange(N):
+        x, y = X[idx][0]
+        x_dash, y_dash = X_dash[idx][0]
+        A1 = np.array(x * P[2, :] - P[0, :])
+        A2 = np.array(y * P[2, :] - P[1, :])
+        A3 = np.array(x_dash * P_dash[2, :] - P_dash[0, :])
+        A4 = np.array(y_dash * P_dash[2, :] - P_dash[1, :])
+        A = np.array((A1, A2, A3, A4), axis=0)
+
+        scene_pt = null(A)
+        scene_points[i, :] = np.reshape(scene_pt, (1, 4))
+
+    return scene_points
 
 def main():
     """ Main function """
