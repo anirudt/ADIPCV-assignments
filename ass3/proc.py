@@ -205,7 +205,7 @@ def compute_projective_mats(F, e, e_dash):
     M = np.dot(e_dash_cross, F)
 
     P_dash = np.concatenate((M, np.reshape(e_dash, (3,1))), axis=1)
-    print "Projective matrices are {} and {}".formati(P, P_dash)
+    print "Projective matrices are {} and {}".format(P, P_dash)
 
     return P, P_dash
 
