@@ -1,0 +1,74 @@
+\documentclass[]{article}
+\usepackage{amsmath}
+
+%opening
+\title{ADIPCV Assignment}
+\author{}
+
+\begin{document}
+
+\maketitle
+
+For instructions regarding running code, kindly refer to the \texttt{README.md} file attached.
+
+\section{Computing Fundamental Matrix}
+The fundamental matrix is computed using the \textbf{8 point algorithm}. It consists of
+computing keypoints, normalizing them, taking a DLT and denormalizing the null space to retrieve our result.
+In order to reduce the effect of noise into our computations,
+we consider 10 points for the DLT. The points are normalized using
+\begin{equation}
+  \mathbf{x_{norm}} = \frac{\mathbf{x}-\mu}{\sigma}
+\end{equation}
+
+Using Direct Linear Transform (DLT),
+$\mathbf{A}\mathbf{F} = \mathbf{0}$. $\mathbf{F}$ is computed
+by calculating the null space of $\mathbf{A}$, the
+eigenvector corresponding to the smallest eigenvalue.
+
+Post this, the SVD of $\mathbf{F}$ is calculated, and the smallest eigenvalue is forced
+to zero, and then $\mathbf{F}$ is recomputed.
+
+Also, the fundamental matrix is accordingly denormalized, using:
+\begin{equation}
+  \mathbf{T} = 
+  \begin{bmatrix}
+    \frac{1}{\sigma_x} & 0 & \frac{-\mu_x}{\sigma_x} \\
+    0 & \frac{1}{\sigma_y} & \frac{-\mu_y}{\sigma_y} \\
+  0 & 0 & 1 \\
+  \end{bmatrix}
+\end{equation}
+Similarly, for $\mathbf{T_p}$. Thus,
+\begin{equation}
+  \mathbf{F_{denorm}} = {T_p}^{T} \mathbf{F} T 
+\end{equation}
+
+\section{Drawing Epipolar Lines}
+For each of the keypoints, using the fundamental matrix,
+the corresponding epipolar lines can be determined, using $F$ and $F^T$ respectively.
+Using boundness of the image plane, we can plot the lines.
+
+\section{Epipoles}
+The epipoles can be computed from the right and left null spaces of the fundamental matrix,
+and from the intersection of the epipolar lines. The two of them are quite close to each other,
+thus verifying our computations.
+
+\section{Projective Matrices}
+The projective matrices assumed in this case are:
+\begin{equation}
+  \mathbf{P_1} = [ \mathbf{I} | \mathbf{0} ]
+\end{equation}
+and
+\begin{equation}
+  \mathbf{P_2} = [ \mathbf{[e_2]_X} \mathbf{F} | \mathbf{e_2} ]
+\end{equation}
+
+\section{Depth and Scene Point Computation}
+The scene points can be computed using DLT, resulting from the equation
+$\mathbf{X} \times \mathbf{P} x$. Also, the depth can be computed from
+the equation:
+\begin{equation}
+  d = \left( \mathbf{X} - \mathbf{C_i} \right) . {mr^3}_i
+\end{equation}
+where $\mathbf{X}$ is the scene point, $\mathbf{C_i}$ is the centre of the camera,
+and ${mr^3}_i$ is the 3rd row of the $\mathbf{M}$, the submatrix of the camera matrix.
+\end{document}
