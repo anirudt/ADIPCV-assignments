@@ -11,8 +11,6 @@ def null(A, eps=1e-7):
     u, s, vh = np.linalg.svd(A)
     null_space = np.compress(s <= eps, vh, axis=0)
     f = null_space.T
-    print "u: {}, s: {}, vh: {}".format(u.shape, s.shape, vh.shape)
-    print f.shape
     if f.size == 0:
         return np.array([0,0,0,0])
     return f[:,0]
@@ -91,11 +89,8 @@ def compute_fundamental(X, X_dash):
         x_dash, y_dash = (x_dash - mu_x2)/std_x2, (y_dash - mu_y2)/std_y2
         A[i,:] = np.array([x_dash*x, x_dash*y, x_dash, y_dash*x, y_dash*y, y_dash, x_dash, y_dash, 1])
 
-    print A
     u, s, vh = np.linalg.svd(A)
-    print vh
     F_loose = vh[8, :].reshape((3,3))
-    print F_loose
 
     U, s, V = np.linalg.svd(F_loose)
 
@@ -104,18 +99,11 @@ def compute_fundamental(X, X_dash):
     S = np.diag(s)
     F = np.dot(U, np.dot(S, V))
     #F = F/np.linalg.norm(F)
-    print Tp, Tp_dash
-    print F
-    print "Net Dot product is {}".format(np.dot(A, F.ravel()).sum())
     F = np.dot(Tp_dash.T, np.dot(F, Tp))
-    print "Net Dot product is {}".format(np.dot(A, F.ravel()).sum())
     f, _ = cv2.findFundamentalMat(X, X_dash)
 
-    print "Fundamental matrices are {} and {}".format(f, F)
-    print "Net Dot product_ is {}".format(np.dot(A, f.ravel()).sum())
-
-    print "Determinants {} and {}".format(np.linalg.det(F), np.linalg.det(f))
-    return F
+    print "Fundamental matrix is {}".format(f)
+    return f
 
 def compute_epipoles(F):
     """ Computes epipoles e1 and e2 """
@@ -134,7 +122,7 @@ def draw_epipolar_lines(X, X_dash, F):
 
     e, e_dash = compute_epipoles(F)
     e, e_dash = e/e[2], e_dash/e_dash[2]
-    print "epipoles are {} and {}".format(e, e_dash)
+    print "Epipoles calculated from null space of F are {} and {}".format(e, e_dash)
 
     line_selection = []
     for idx in xrange(N):
@@ -199,8 +187,10 @@ def draw_epipolar_lines(X, X_dash, F):
 
     e_calc = cross_product(line_selection[0], line_selection[1])
     e_calc /= e_calc[2]
-    print "diff: ", e - e_calc
-    print e_dash - e_dash_calc
+    print "Epipoles calculated from intersection of epipolar lines are {} and {}".format(e_calc, e_dash_calc)
+    print "Differences in the calculation of epipoles:"
+    print "delta e: ", np.linalg.norm(e - e_calc)
+    print "delta e':", np.linalg.norm(e_dash - e_dash_calc)
     cv2.imwrite("lines_1.png", img1)
     cv2.imwrite("lines_2.png", img2)
 
@@ -215,7 +205,7 @@ def compute_projective_mats(F, e, e_dash):
     M = np.dot(e_dash_cross, F)
 
     P_dash = np.concatenate((M, np.reshape(e_dash, (3,1))), axis=1)
-    print P, P_dash
+    print "Projective matrices are {} and {}".formati(P, P_dash)
 
     return P, P_dash
 
@@ -260,18 +250,32 @@ def get_depths(X, X_dash, P, P_dash):
     depth_c1 = np.linalg.det(P[:3,:3]) * depth_c1
     depth_c2 = np.linalg.det(P[:3,:3]) * depth_c2
 
+    print "Depth vectors: {}, {}".format(depth_c1, depth_c2)
     return depth_c1, depth_c2
 
 def main():
     """ Main function """
+
+    # Compute the SIFT matches
     X, X_dash = compute_sift_matches("imgs/Sunrise_Lt.jpg", "imgs/Sunrise_Rt.jpg")
+
+    # Computes fundamental using DLT
     F = compute_fundamental(X, X_dash)
+
+    # Computes Fundamental using standard functions, using this for subsequent calculations
     f, _ = cv2.findFundamentalMat(X, X_dash)
+
+    # Draw epipolar lines using the keypoints and F
     draw_epipolar_lines(X, X_dash, f)
+
+    # Compute the epipoles
     e, e_dash = compute_epipoles(f)
+
+    # Compute the projective matrices
     P, P_dash = compute_projective_mats(f, e, e_dash)
+
+    # Finally, compute the depths
     depth_c1, depth_c2 = get_depths(X, X_dash, P, P_dash)
-    print depth_c1, depth_c2
 
 if __name__ == '__main__':
     main()
