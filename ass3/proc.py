@@ -8,7 +8,7 @@ import cPickle as pickle
 
 def null(A, eps=1e-7):
     """ Computes the null space of the matrix A """
-    u, s, vh = np.linalg.svd(A)
+    u, s, vh = np.linalg.svd(A, full_matrices=0)
     null_space = np.compress(s <= eps, vh, axis=0)
     f = null_space.T
     return f[:,0]
@@ -203,7 +203,7 @@ def main():
     X, X_dash = compute_sift_matches("imgs/Sunrise_Lt.jpg", "imgs/Sunrise_Rt.jpg")
     F = compute_fundamental(X, X_dash)
     f, _ = cv2.findFundamentalMat(X, X_dash)
-    draw_epipolar_lines(X, X_dash, f)
+    draw_epipolar_lines(X, X_dash, F)
     e, e_dash = compute_epipoles(f)
     P, P_dash = compute_projective_mats(F, e, e_dash)
 

@@ -2,6 +2,8 @@
 import cv2
 import pdb
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import pylab as plt
 
 def color_correct(img1, fname):
@@ -63,7 +65,7 @@ def inTriangle(a1, a2, a3, p):
     else:
         return False
 
-def max_sat(x, y, c1, c2, c3):
+def max_sat(x, y, c1, c2, c3, k):
     """ Maximally Saturates the image """
     C = np.array([1.0/3, 1.0/3])
 
@@ -85,23 +87,39 @@ def max_sat(x, y, c1, c2, c3):
             elif inTriangle(C, c3, c1, pt):
                 # Opposite to c2
                 sat_pt = intersection(l, L2)
-            sat[row, col] = np.array(sat_pt+[1-sum(sat_pt)])
+            if k == 100:
+                sat[row, col] = np.array(sat_pt+[1-sum(sat_pt)])
+            else:
+                mp = section_formula(C, sat_pt, k)
+                sat[row, col] = np.array(mp+[1-sum(mp)])
+
+            #print sat[row, col], pt
     return sat
 
 def xyz2rgb(img_norm, sum_vec):
     """ Converts image from XYZ to RGB"""
     img = img_norm * (sum_vec)
-    Tp = np.array([[1.9107, -0.5326, -0.2883],
+    Tp = np.array([
+        [0.0583, -0.1185, 0.8986],
         [-0.9843, 1.9984, -0.0283],
-        [0.0583, -0.1185, 0.8986]])
+        [1.9107, -0.5326, -0.2883],
+        ])
     rgb = np.dot(img, Tp.T)
-    bl = rgb[:,:,2].copy()
-    red = rgb[:,:,0].copy()
-    rgb[:,:,2] = red
-    rgb[:,:,0] = bl
+    #bl = rgb[:,:,2].copy()
+    #red = rgb[:,:,0].copy()
+    #rgb[:,:,2] = red
+    #rgb[:,:,0] = bl
 
-    pdb.set_trace()
     return rgb
+
+def section_formula(pt1, pt2, k):
+    """ Divides the line between PT1, PT2 in the ratio of
+    k:1 """
+    x1, y1 = pt1
+    x2, y2 = pt2
+    x3 = (k*x2+x1)*1.0/(k+1)
+    y3 = (k*y2+y1)*1.0/(k+1)
+    return [x3, y3]
 
 def analyse_sat(img, fname, argum):
     """ Analyse the images in saturation domain """
@@ -131,12 +149,27 @@ def analyse_sat(img, fname, argum):
     c = x[y.argmax()], y.max()
     print a, b, c
 
+    img_norm = xyz * (sum_vec)
+    Tp = np.array([
+        [0.0583, -0.1185, 0.8986],
+        [-0.9843, 1.9984, -0.0283],
+        [1.9107, -0.5326, -0.2883],
+        ])
+    rgb = np.dot(img_norm, Tp.T)
+    cv2.imwrite('self_recons.png', rgb)
     if argum == "max":
         # Saturation Max
-        sat = max_sat(xyz[:,:,0], xyz[:,:,1], a, b, c)
-        res = xyz2rgb(sat, sum_vec)
-        res = np.array(res, dtype=np.uint8)
-        cv2.imwrite("recons.png", res)
+        for k in [0, 0.1, 0.3, 0.5, 0.7, 1, 2, 100]:
+            sat = max_sat(xyz[:,:,0], xyz[:,:,1], a, b, c, k)
+            sat_xyz = np.array(sat)
+            x_sat = sat_xyz[:,:,0].ravel()
+            y_sat = sat_xyz[:,:,1].ravel()
+            plt.figure()
+            plt.scatter(x_sat, y_sat)
+            plt.savefig('gamut_triangle_maxsat_{}_{}.png'.format(fname, k))
+            res = xyz2rgb(sat, sum_vec)
+            res = np.array(res, dtype=np.uint8)
+            cv2.imwrite("recons_{}.png".format(k), res)
 
     else:
         # Saturation Min
