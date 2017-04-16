@@ -28,8 +28,8 @@ def color_correct(img1, fname):
         white_g[..., np.newaxis],white_r[..., np.newaxis]), axis=2)
     white_corrected_img1 = np.array(white_corrected_img1, dtype=np.uint8)
 
-    cv2.imwrite("gray_correct{}.png".format(fname), gray_corrected_img1)
-    cv2.imwrite("white_correct{}.png".format(fname), white_corrected_img1)
+    cv2.imwrite("out/gray_correct{}.png".format(fname), gray_corrected_img1)
+    cv2.imwrite("out/white_correct{}.png".format(fname), white_corrected_img1)
     return white_corrected_img1, gray_corrected_img1
 
 def line(p1, p2):
@@ -142,7 +142,7 @@ def analyse_sat(img, fname, argum):
     # Use the chromaticity model
     plt.figure()
     plt.scatter(x, y)
-    plt.savefig("gamut_triangle{}.png".format(fname))
+    plt.savefig("out/gamut_triangle{}.png".format(fname))
 
     a = np.min(x[np.nonzero(x)]), np.min(y[np.nonzero(y)])
     b = x.max(), y[x.argmax()]
@@ -156,7 +156,7 @@ def analyse_sat(img, fname, argum):
         [1.9107, -0.5326, -0.2883],
         ])
     rgb = np.dot(img_norm, Tp.T)
-    cv2.imwrite('self_recons.png', rgb)
+    cv2.imwrite('out/self_recons_{}.png'.format(fname), rgb)
     if argum == "max":
         # Saturation Max
         for k in [0, 0.1, 0.3, 0.5, 0.7, 1, 2, 100]:
@@ -166,16 +166,14 @@ def analyse_sat(img, fname, argum):
             y_sat = sat_xyz[:,:,1].ravel()
             plt.figure()
             plt.scatter(x_sat, y_sat)
-            plt.savefig('gamut_triangle_maxsat_{}_{}.png'.format(fname, k))
+            plt.savefig('out/gamut_triangle_maxsat_{}_{}.png'.format(fname, k))
             res = xyz2rgb(sat, sum_vec)
             res = np.array(res, dtype=np.uint8)
-            cv2.imwrite("recons_{}.png".format(k), res)
+            cv2.imwrite("out/recons_{}_{}.png".format(k, fname), res)
 
     else:
         # Saturation Min
         print "False"
-
-
 
 def mean_shift_seg(img):
     """ Segments the image using Mean Shift Segmentation Algorithm """
@@ -188,5 +186,6 @@ if __name__ == "__main__":
     res1, res2 = color_correct(img1, "artificial")
     res3, res4 = color_correct(img2, "normal")
     res5, res6 = color_correct(img3, "thera")
+    analyse_sat(res1, "artificial", "max")
     analyse_sat(res3, "normal", "max")
-    #analyse_sat(img3, "thera", "max")
+    analyse_sat(res5, "thera", "max")
