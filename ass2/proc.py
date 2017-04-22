@@ -40,9 +40,9 @@ def apply_homography(img, h):
             x_dash = np.dot(h, x)
             x_dash = x_dash / (x_dash[2])
             if np.any(x_dash < 0) or (x_dash[0] >= nrows or x_dash[1] >= ncols):
-                continue
+                pass
             else:
-                new_img[np.floor(x_dash[0])-1, np.floor(x_dash[1])-1] = img[i, j]
+                new_img[int(x_dash[0]), int(x_dash[1])] = img[i, j]
 
     return new_img
 
@@ -166,8 +166,8 @@ def apply_all(f1, f2):
     M, status = cv2.findHomography(X_dash, X, cv2.RANSAC, 5.0)
     h = compute_homography(X_dash, X)
     img = cv2.imread(f2, cv2.IMREAD_GRAYSCALE)
-    out = apply_homography(img, h)
-    #out = cv2.warpPerspective(img, M, img.shape[1::-1])
+    #out = apply_homography(img, h)
+    out = cv2.warpPerspective(img, M, img.shape[1::-1])
     cv2.imwrite("out/manual.jpg", out)
 
 if __name__ == "__main__":
